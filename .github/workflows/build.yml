@@ -1,4 +1,4 @@
-name: Recovery Build
+name: Recovery Build ai
 
 on:
   workflow_dispatch:
