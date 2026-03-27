@@ -108,8 +108,11 @@ jobs:
         
         make clean
         
-        # ПУТЬ К ОБЪЕКТАМ
-        BASE_OBJ="out/target/product/${{ github.event.inputs.DEVICE_NAME }}/obj/SHARED_LIBRARIES"
+        # ПУТИ К ОБЪЕКТАМ (ОБА ВАРИАНТА: 64 и 32 бита)
+        OBJS=(
+          "out/target/product/${{ github.event.inputs.DEVICE_NAME }}/obj/SHARED_LIBRARIES"
+          "out/target/product/${{ github.event.inputs.DEVICE_NAME }}/obj_arm/SHARED_LIBRARIES"
+        )
         
         # СПИСОК ВСЕХ ЛИБ-ПАРАЗИТОВ
         LIBS=(
@@ -121,20 +124,18 @@ jobs:
           "android.security.maintenance-ndk_platform"
         )
         
-        # СОЗДАЕМ ЗАГЛУШКИ ОПТОМ
-        for LIB in "${LIBS[@]}"; do
-          mkdir -p "$BASE_OBJ/${LIB}_intermediates"
-          touch "$BASE_OBJ/${LIB}_intermediates/${LIB}.so.toc"
-          touch "$BASE_OBJ/${LIB}_intermediates/${LIB}.so"
+        # СОЗДАЕМ ЗАГЛУШКИ ВЕЗДЕ
+        for BASE in "${OBJS[@]}"; do
+          for LIB in "${LIBS[@]}"; do
+            mkdir -p "$BASE/${LIB}_intermediates"
+            touch "$BASE/${LIB}_intermediates/${LIB}.so.toc"
+            touch "$BASE/${LIB}_intermediates/${LIB}.so"
+          done
         done
         
-        # ПОГНАЛИ
+        # ПОГНАЛИ СНОВА
         make ${{ github.event.inputs.BUILD_TARGET }}image -j$(nproc --all)
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
-
-
-
-
 
     - name: Upload to Release
       uses: softprops/action-gh-release@v2
