@@ -100,11 +100,11 @@ jobs:
       run: |
         source build/envsetup.sh
         
-        # 1. Жесткие флаги игнора ошибок
+        # 1. Оставляем только те флаги, которые не бесят Android 14
         export ALLOW_MISSING_DEPENDENCIES=true
         export BUILD_BROKEN_MISSING_REQUIRED_MODULES=true
         export TW_EXCLUDE_APFS=true
-        export TEMPORARY_DISABLE_PATH_RESTRICTIONS=true
+
         
         # 2. Вырезаем Guava и проблемный тулчейн (тот самый бред из-за которого упало)
         # Удаляем папку, чтобы Soong даже не пытался строить граф зависимостей для нее
