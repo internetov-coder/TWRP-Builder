@@ -106,18 +106,32 @@ jobs:
         
         lunch ${{ github.event.inputs.MAKEFILE_NAME }}-ap2a-eng
         
-        # Сначала чистим
         make clean
         
-        # А ТЕПЕРЬ СОЗДАЕМ ЗАГЛУШКИ (когда out уже почищен)
-        OBJ_PATH="out/target/product/${{ github.event.inputs.DEVICE_NAME }}/obj/SHARED_LIBRARIES/android.security.apc-ndk_platform_intermediates"
-        mkdir -p $OBJ_PATH
-        touch $OBJ_PATH/android.security.apc-ndk_platform.so.toc
-        touch $OBJ_PATH/android.security.apc-ndk_platform.so
+        # ПУТЬ К ОБЪЕКТАМ
+        BASE_OBJ="out/target/product/${{ github.event.inputs.DEVICE_NAME }}/obj/SHARED_LIBRARIES"
         
-        # И только теперь запускаем сборку
+        # СПИСОК ВСЕХ ЛИБ-ПАРАЗИТОВ
+        LIBS=(
+          "android.security.apc-ndk_platform"
+          "android.system.keystore2-V1-ndk_platform"
+          "android.system.keystore2-V2-ndk_platform"
+          "android.system.keystore2-V3-ndk_platform"
+          "android.security.authorization-ndk_platform"
+          "android.security.maintenance-ndk_platform"
+        )
+        
+        # СОЗДАЕМ ЗАГЛУШКИ ОПТОМ
+        for LIB in "${LIBS[@]}"; do
+          mkdir -p "$BASE_OBJ/${LIB}_intermediates"
+          touch "$BASE_OBJ/${LIB}_intermediates/${LIB}.so.toc"
+          touch "$BASE_OBJ/${LIB}_intermediates/${LIB}.so"
+        done
+        
+        # ПОГНАЛИ
         make ${{ github.event.inputs.BUILD_TARGET }}image -j$(nproc --all)
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
+
 
 
 
