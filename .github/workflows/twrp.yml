@@ -78,12 +78,13 @@ jobs:
         echo "workspace-folder=$(pwd)" >> $GITHUB_OUTPUT
       id: pwd
 
-    - name: Repo Sync & Force Clone Security Libs
+    - name: Repo Sync
       run: |
         repo sync -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --current-branch
-        # РУЧНОЙ ДОБОР ЛИБ: клоним папку security, которой нет в минимальном манифесте
-        git clone https://android.googlesource.com/platform/system/security system/security --depth=1
+        # Проверим, реально ли она там (просто посмотрим в логах)
+        ls -d system/security
       working-directory: workspace
+
 
     - name: Clone device tree
       run: |
