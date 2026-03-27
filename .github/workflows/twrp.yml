@@ -100,22 +100,26 @@ jobs:
       run: |
         source build/envsetup.sh
         
-        # СОЗДАЕМ ЗАГЛУШКУ (STUB):
-        # Ninja ищет этот файл как зависимость для libtar. 
-        # Мы создаем его вручную, чтобы он перестал жаловаться.
-        mkdir -p out/target/product/${{ github.event.inputs.DEVICE_NAME }}/obj/SHARED_LIBRARIES/android.security.apc-ndk_platform_intermediates/
-        touch out/target/product/${{ github.event.inputs.DEVICE_NAME }}/obj/SHARED_LIBRARIES/android.security.apc-ndk_platform_intermediates/android.security.apc-ndk_platform.so.toc
-        
-        # Добавляем все защитные флаги
         export ALLOW_MISSING_DEPENDENCIES=true
         export BUILD_BROKEN_MISSING_REQUIRED_MODULES=true
         export TW_EXCLUDE_APFS=true
         
-        # Собираем
         lunch ${{ github.event.inputs.MAKEFILE_NAME }}-ap2a-eng
+        
+        # Сначала чистим
         make clean
+        
+        # А ТЕПЕРЬ СОЗДАЕМ ЗАГЛУШКИ (когда out уже почищен)
+        OBJ_PATH="out/target/product/${{ github.event.inputs.DEVICE_NAME }}/obj/SHARED_LIBRARIES/android.security.apc-ndk_platform_intermediates"
+        mkdir -p $OBJ_PATH
+        touch $OBJ_PATH/android.security.apc-ndk_platform.so.toc
+        touch $OBJ_PATH/android.security.apc-ndk_platform.so
+        
+        # И только теперь запускаем сборку
         make ${{ github.event.inputs.BUILD_TARGET }}image -j$(nproc --all)
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
+
+
 
 
     - name: Upload to Release
