@@ -100,21 +100,28 @@ jobs:
       run: |
         source build/envsetup.sh
         
+        # 1. Жесткие флаги игнора ошибок
         export ALLOW_MISSING_DEPENDENCIES=true
         export BUILD_BROKEN_MISSING_REQUIRED_MODULES=true
         export TW_EXCLUDE_APFS=true
+        export TEMPORARY_DISABLE_PATH_RESTRICTIONS=true
+        
+        # 2. Вырезаем Guava и проблемный тулчейн (тот самый бред из-за которого упало)
+        # Удаляем папку, чтобы Soong даже не пытался строить граф зависимостей для нее
+        rm -rf tools/platform-compat
+        
+        # 3. Чистим .repo прямо тут, если забыли раньше, чтобы Ninja не задохнулся
+        rm -rf .repo
         
         lunch ${{ github.event.inputs.MAKEFILE_NAME }}-ap2a-eng
         
         make clean
         
-        # ПУТИ К ОБЪЕКТАМ (ОБА ВАРИАНТА: 64 и 32 бита)
+        # Твои заглушки для Keystore (оставляем, они рабочие)
         OBJS=(
           "out/target/product/${{ github.event.inputs.DEVICE_NAME }}/obj/SHARED_LIBRARIES"
           "out/target/product/${{ github.event.inputs.DEVICE_NAME }}/obj_arm/SHARED_LIBRARIES"
         )
-        
-        # СПИСОК ВСЕХ ЛИБ-ПАРАЗИТОВ
         LIBS=(
           "android.security.apc-ndk_platform"
           "android.system.keystore2-V1-ndk_platform"
@@ -124,7 +131,6 @@ jobs:
           "android.security.maintenance-ndk_platform"
         )
         
-        # СОЗДАЕМ ЗАГЛУШКИ ВЕЗДЕ
         for BASE in "${OBJS[@]}"; do
           for LIB in "${LIBS[@]}"; do
             mkdir -p "$BASE/${LIB}_intermediates"
@@ -133,9 +139,10 @@ jobs:
           done
         done
         
-        # ПОГНАЛИ СНОВА
+        # 4. Погнали. Если упадет в многопотоке, попробуем понять где затык
         make ${{ github.event.inputs.BUILD_TARGET }}image -j$(nproc --all)
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
+
 
     - name: Upload to Release
       uses: softprops/action-gh-release@v2
