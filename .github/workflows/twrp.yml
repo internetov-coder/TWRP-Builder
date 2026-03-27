@@ -6,11 +6,11 @@ on:
       MANIFEST_URL:
         description: 'Ссылка на манифест'
         required: true
-        default: 'https://github.com/minimal-manifest-twrp/platform_manifest_twrp_omni'
+        default: 'https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp'
       MANIFEST_BRANCH:
         description: 'Ветка манифеста'
         required: true
-        default: 'twrp-14'
+        default: 'twrp-14.1'
       DEVICE_TREE_URL:
         description: 'Ссылка на дерево устройства'
         required: true
@@ -73,13 +73,16 @@ jobs:
         cd workspace
         git config --global user.name "internetov-coder"
         git config --global user.email "internetov.dev@gmail.com"
+        # Используем проверенный AOSP манифест 14.1
         repo init --depth=1 -u ${{ github.event.inputs.MANIFEST_URL }} -b ${{ github.event.inputs.MANIFEST_BRANCH }}
         echo "workspace-folder=$(pwd)" >> $GITHUB_OUTPUT
       id: pwd
 
-    - name: Repo Sync
+    - name: Repo Sync & Force Clone Security Libs
       run: |
         repo sync -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --current-branch
+        # РУЧНОЙ ДОБОР ЛИБ: клоним папку security, которой нет в минимальном манифесте
+        git clone https://android.googlesource.com/platform/system/security system/security --depth=1
       working-directory: workspace
 
     - name: Clone device tree
@@ -96,7 +99,7 @@ jobs:
       run: |
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
-        # Собираем с правильным релизом ap2a
+        # Собираем с ap2a
         lunch ${{ github.event.inputs.MAKEFILE_NAME }}-ap2a-eng
         make clean
         make ${{ github.event.inputs.BUILD_TARGET }}image -j$(nproc --all)
@@ -113,6 +116,7 @@ jobs:
         tag_name: ${{ github.run_id }}
         body: |
           Device: ${{ github.event.inputs.DEVICE_NAME }}
+          Manifest: ${{ github.event.inputs.MANIFEST_BRANCH }}
           Target: ${{ github.event.inputs.BUILD_TARGET }}.img
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
